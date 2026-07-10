@@ -1,0 +1,168 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+/* O app é todo escuro. Sem isso, o branco padrão do <html> "pisca"
+   por trás dos snapshots durante as view transitions. */
+html {
+  background-color: #000;
+}
+
+/* ------------------------------------------------------------------ */
+/* Motion — mesma linguagem visual do auth (card-enter, shine, glows) */
+/* ------------------------------------------------------------------ */
+
+/* Entrada de blocos e cards. Use `--stagger: n` para escalonar listas. */
+.rise {
+  animation: rise-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(min(var(--stagger, 0), 8) * 70ms);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(16px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Varredura de brilho em botões primários (mesmo efeito do auth-button). */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.35), transparent);
+  transition: transform 850ms ease;
+  pointer-events: none;
+}
+
+.btn-shine:hover::before {
+  transform: translateX(120%);
+}
+
+/* Contadores (likes) trocam de valor deslizando. */
+.count-swap {
+  display: inline-block;
+  animation: count-swap 260ms ease both;
+}
+
+@keyframes count-swap {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* Curtida: coração "estoura" + anel expandindo. */
+.heart-pop {
+  animation: heart-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes heart-pop {
+  0% {
+    transform: scale(0.55);
+  }
+
+  45% {
+    transform: scale(1.35);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.heart-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 9999px;
+  border: 2px solid rgba(244, 63, 94, 0.55);
+  animation: heart-ring 520ms ease-out both;
+  pointer-events: none;
+}
+
+@keyframes heart-ring {
+  from {
+    opacity: 0.8;
+    transform: scale(0.45);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.65);
+  }
+}
+
+/* Banner do perfil "respira" lentamente. */
+.banner-live {
+  background-size: 170% 170% !important;
+  animation: banner-pan 12s ease-in-out infinite alternate;
+}
+
+@keyframes banner-pan {
+  from {
+    background-position: 0% 35%;
+  }
+
+  to {
+    background-position: 100% 65%;
+  }
+}
+
+/* ------------------------------------------------------------ */
+/* Transição de página (View Transitions API, via onNavigate)   */
+/* ------------------------------------------------------------ */
+
+::view-transition-old(root) {
+  animation: vt-out 200ms ease-in both;
+}
+
+::view-transition-new(root) {
+  animation: vt-in 340ms 60ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* O header persiste entre páginas sem pular junto com o conteúdo. */
+::view-transition-old(header),
+::view-transition-new(header) {
+  animation: none;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .count-swap,
+  .heart-pop,
+  .heart-ring,
+  .banner-live,
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
