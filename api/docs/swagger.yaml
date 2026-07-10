@@ -1,0 +1,36 @@
+definitions:
+  handlers.HealthCheck:
+    properties:
+      alive:
+        type: boolean
+      name:
+        type: string
+    type: object
+  handlers.HealthResponse:
+    properties:
+      checks:
+        items:
+          $ref: '#/definitions/handlers.HealthCheck'
+        type: array
+      status:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check the health of the API
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Check the health of the API
+      tags:
+      - Default
+swagger: "2.0"
