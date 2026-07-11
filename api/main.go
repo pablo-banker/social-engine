@@ -7,6 +7,7 @@ import (
 	"social-engine/common/repositories"
 	"social-engine/common/validation"
 	"social-engine/handlers"
+	"social-engine/handlers/middleware"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -58,6 +59,30 @@ func main() {
 	app.Get("/docs/*", swagger.New(swagger.ConfigDefault))
 
 	app.Get("/health", handlers.Health)
+
+	// Auth
+	app.Post("/auth/register", handlers.Register)
+	app.Post("/auth/login", handlers.Login)
+
+	// Posts
+	app.Get("/posts", middleware.OptionalAuth, handlers.List)
+	app.Post("/posts", middleware.RequireAuth, handlers.Create)
+	app.Get("/posts/:id", middleware.OptionalAuth, handlers.Get)
+	app.Post("/posts/:id/like", middleware.RequireAuth, handlers.ToggleLike)
+	app.Get("/posts/:id/comments", handlers.ListComments)
+	app.Post("/posts/:id/comments", middleware.RequireAuth, handlers.AddComment)
+
+	// Users / Profiles
+	app.Get("/users/:username", handlers.GetProfile)
+	app.Get("/users/:username/posts", middleware.OptionalAuth, handlers.ListUserPosts)
+
+	// Explore & Trending
+	app.Get("/explore", middleware.OptionalAuth, handlers.Explore)
+	app.Get("/trending", middleware.OptionalAuth, handlers.Trending)
+
+	// Me (logged-in user)
+	app.Get("/me", middleware.RequireAuth, handlers.GetSettings)
+	app.Patch("/me", middleware.RequireAuth, handlers.UpdateProfile)
 
 	/* Initiate server */
 	port := os.Getenv("PORT")

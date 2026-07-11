@@ -1,4 +1,79 @@
 definitions:
+  entities.Comment:
+    properties:
+      author:
+        $ref: '#/definitions/entities.User'
+      authorId:
+        type: string
+      content:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      postId:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  entities.Post:
+    properties:
+      author:
+        allOf:
+        - $ref: '#/definitions/entities.User'
+        description: |-
+          Associations loaded via LoadAssociations. Author is exposed nested;
+          Likes/Comments are loaded only to derive the counters below.
+      authorId:
+        type: string
+      comments:
+        type: integer
+      content:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      likedByMe:
+        type: boolean
+      likes:
+        description: Transient view fields derived from the loaded associations.
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  entities.User:
+    properties:
+      avatarId:
+        type: string
+      bannerId:
+        type: string
+      bio:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      stats:
+        allOf:
+        - $ref: '#/definitions/entities.UserStats'
+        description: Stats is a transient aggregate populated only for profile responses.
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+  entities.UserStats:
+    properties:
+      followers:
+        type: integer
+      following:
+        type: integer
+      posts:
+        type: integer
+    type: object
   handlers.HealthCheck:
     properties:
       alive:
@@ -15,9 +90,226 @@ definitions:
       status:
         type: string
     type: object
+  handlers.authResponse:
+    properties:
+      accessToken:
+        type: string
+      user:
+        $ref: '#/definitions/handlers.userDTO'
+    type: object
+  handlers.createCommentRequest:
+    properties:
+      content:
+        maxLength: 300
+        type: string
+    required:
+    - content
+    type: object
+  handlers.createPostRequest:
+    properties:
+      content:
+        maxLength: 500
+        type: string
+    required:
+    - content
+    type: object
+  handlers.exploreResponse:
+    properties:
+      posts:
+        items:
+          $ref: '#/definitions/entities.Post'
+        type: array
+      users:
+        items:
+          $ref: '#/definitions/entities.User'
+        type: array
+    type: object
+  handlers.likeResult:
+    properties:
+      liked:
+        type: boolean
+      likes:
+        type: integer
+    type: object
+  handlers.loginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handlers.registerRequest:
+    properties:
+      email:
+        type: string
+      firstName:
+        maxLength: 50
+        type: string
+      lastName:
+        maxLength: 50
+        type: string
+      password:
+        maxLength: 72
+        minLength: 6
+        type: string
+    required:
+    - email
+    - firstName
+    - lastName
+    - password
+    type: object
+  handlers.trendingResponse:
+    properties:
+      posts:
+        items:
+          $ref: '#/definitions/entities.Post'
+        type: array
+      topics:
+        items:
+          $ref: '#/definitions/models.TrendingTopic'
+        type: array
+    type: object
+  handlers.updateProfileRequest:
+    properties:
+      avatarId:
+        type: string
+      bannerId:
+        type: string
+      bio:
+        maxLength: 160
+        type: string
+      name:
+        maxLength: 50
+        type: string
+    required:
+    - avatarId
+    - bannerId
+    - name
+    type: object
+  handlers.userDTO:
+    properties:
+      avatarId:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      username:
+        type: string
+    type: object
+  models.TrendingTopic:
+    properties:
+      posts:
+        type: integer
+      tag:
+        type: string
+    type: object
+  utils.ErrorResponse:
+    properties:
+      code:
+        type: string
+      details:
+        type: string
+      error:
+        type: string
+      status:
+        type: integer
+      supportCode:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with email and password and receive an access token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.authResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Log in
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create an account and receive an access token
+      parameters:
+      - description: Registration data
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.authResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Register a new account
+      tags:
+      - Auth
+  /explore:
+    get:
+      parameters:
+      - description: Filter posts by hashtag
+        in: query
+        name: tag
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.exploreResponse'
+      summary: Explore people and posts
+      tags:
+      - Explore
   /health:
     get:
       consumes:
@@ -33,4 +325,260 @@ paths:
       summary: Check the health of the API
       tags:
       - Default
+  /me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.User'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my profile settings
+      tags:
+      - Me
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Profile fields
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.userDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update my profile
+      tags:
+      - Me
+  /posts:
+    get:
+      description: Public feed of posts; likedByMe reflects the caller when authenticated
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Post'
+            type: array
+      summary: List the public feed
+      tags:
+      - Posts
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Post content
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createPostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Post'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a post
+      tags:
+      - Posts
+  /posts/{id}:
+    get:
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Post'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Get a post
+      tags:
+      - Posts
+  /posts/{id}/comments:
+    get:
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Comment'
+            type: array
+      summary: List a post's comments
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment content
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Comment'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a comment
+      tags:
+      - Comments
+  /posts/{id}/like:
+    post:
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.likeResult'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Toggle a like on a post
+      tags:
+      - Likes
+  /trending:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.trendingResponse'
+      summary: Trending topics and posts
+      tags:
+      - Trending
+  /users/{username}:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.User'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Get a user profile
+      tags:
+      - Users
+  /users/{username}/posts:
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Post'
+            type: array
+      summary: List a user's posts
+      tags:
+      - Users
 swagger: "2.0"

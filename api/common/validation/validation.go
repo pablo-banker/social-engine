@@ -11,7 +11,6 @@ var validate *validator.Validate
 func InitValidator() {
 	validate = validator.New()
 	validate.RegisterValidation("jwt", jwtValidator)
-	validate.RegisterValidation("avatarRef", avatarRefValidator)
 }
 
 func Struct(payload any) error {

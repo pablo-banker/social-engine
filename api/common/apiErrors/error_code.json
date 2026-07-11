@@ -1,0 +1,20 @@
+{
+  "SE-000101": "DATABASE_URL environment variable is not set",
+  "SE-000102": "Error connecting to the database",
+  "SE-000103": "Error pinging the database",
+  "SE-000104": "An unexpected error occurred",
+
+  "SE-000201": "The request payload is invalid",
+  "SE-000202": "One or more fields are invalid",
+  "SE-000203": "Invalid email or password",
+  "SE-000204": "This email is already in use",
+  "SE-000205": "This username is already in use",
+  "SE-000206": "Authentication is required",
+  "SE-000207": "The authentication token is invalid or expired",
+
+  "SE-000301": "Post not found",
+
+  "SE-000501": "User not found",
+  "SE-000502": "Invalid avatar selection",
+  "SE-000503": "Invalid banner selection"
+}

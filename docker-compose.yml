@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: social_engine_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: social
+      POSTGRES_PASSWORD: social
+      POSTGRES_DB: social_engine
+    ports:
+      - "5432:5432"
+    volumes:
+      - social_engine_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U social -d social_engine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  social_engine_pgdata:

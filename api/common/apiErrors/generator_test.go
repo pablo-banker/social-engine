@@ -18,7 +18,7 @@ func TestRenderJSON(t *testing.T) {
 			in: []*APIError{
 				New(101, "boom", http.StatusInternalServerError),
 			},
-			want: "{\n  \"DOBRO-000101\": \"boom\"\n}\n",
+			want: "{\n  \"SE-000101\": \"boom\"\n}\n",
 		},
 		{
 			name: "century change inserts blank line",
@@ -27,7 +27,7 @@ func TestRenderJSON(t *testing.T) {
 				New(102, "b", http.StatusOK),
 				New(201, "c", http.StatusOK),
 			},
-			want: "{\n  \"DOBRO-000101\": \"a\",\n  \"DOBRO-000102\": \"b\",\n\n  \"DOBRO-000201\": \"c\"\n}\n",
+			want: "{\n  \"SE-000101\": \"a\",\n  \"SE-000102\": \"b\",\n\n  \"SE-000201\": \"c\"\n}\n",
 		},
 		{
 			name: "input order is preserved across centuries",
@@ -35,14 +35,14 @@ func TestRenderJSON(t *testing.T) {
 				New(201, "a", http.StatusOK),
 				New(101, "b", http.StatusOK),
 			},
-			want: "{\n  \"DOBRO-000201\": \"a\",\n\n  \"DOBRO-000101\": \"b\"\n}\n",
+			want: "{\n  \"SE-000201\": \"a\",\n\n  \"SE-000101\": \"b\"\n}\n",
 		},
 		{
 			name: "escapes special chars in message",
 			in: []*APIError{
 				New(101, `msg with "quotes" and \ slashes`, http.StatusOK),
 			},
-			want: "{\n  \"DOBRO-000101\": \"msg with \\\"quotes\\\" and \\\\ slashes\"\n}\n",
+			want: "{\n  \"SE-000101\": \"msg with \\\"quotes\\\" and \\\\ slashes\"\n}\n",
 		},
 		{
 			name: "empty input",
@@ -60,12 +60,12 @@ func TestRenderJSON(t *testing.T) {
 				New(101, "a", http.StatusOK),
 				New(101, "b", http.StatusOK),
 			},
-			wantErr: "duplicate code DOBRO-000101",
+			wantErr: "duplicate code SE-000101",
 		},
 		{
 			name: "malformed code returns error",
 			in: []*APIError{
-				{Code: "DOBRO-abc", Message: "x"},
+				{Code: "SE-abc", Message: "x"},
 			},
 			wantErr: "invalid code",
 		},
@@ -101,7 +101,7 @@ func TestRenderJSONOnAllRegistry(t *testing.T) {
 	if !strings.HasPrefix(string(got), "{\n") || !strings.HasSuffix(string(got), "}\n") {
 		t.Errorf("malformed envelope")
 	}
-	if !strings.Contains(string(got), "\"DOBRO-000419\": \"error getting user by username\"") {
-		t.Errorf("expected ErrGetUserByUsername entry to be present in rendered output")
+	if !strings.Contains(string(got), "\"SE-000203\": \"Invalid email or password\"") {
+		t.Errorf("expected ErrInvalidCredentials entry to be present in rendered output")
 	}
 }

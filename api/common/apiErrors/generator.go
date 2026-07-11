@@ -27,7 +27,7 @@ func RenderJSON(errs []*APIError) ([]byte, error) {
 	buf.WriteString("{\n")
 	prevGroup := -1
 	for i, e := range errs {
-		num, err := strconv.Atoi(strings.TrimPrefix(e.Code, "DOBRO-"))
+		num, err := strconv.Atoi(strings.TrimPrefix(e.Code, "SE-"))
 		if err != nil {
 			return nil, fmt.Errorf("invalid code %q: %w", e.Code, err)
 		}
