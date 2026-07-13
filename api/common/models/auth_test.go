@@ -61,3 +61,29 @@ func Test_HashAndCheckPassword(t *testing.T) {
 	assert.False(t, CheckPassword(hash, "wrong-pass"), "wrong password should not match")
 	assert.False(t, CheckPassword("not-a-hash", plain), "malformed hash should not match")
 }
+
+func Test_ValidateSecret(t *testing.T) {
+	t.Run("missing", func(t *testing.T) {
+		t.Setenv("JWT_SECRET", "")
+		assert.Error(t, ValidateSecret())
+	})
+
+	t.Run("too short", func(t *testing.T) {
+		t.Setenv("JWT_SECRET", "short-secret")
+		assert.Error(t, ValidateSecret())
+	})
+
+	t.Run("valid", func(t *testing.T) {
+		t.Setenv("JWT_SECRET", "this-is-a-sufficiently-long-secret-value")
+		assert.NoError(t, ValidateSecret())
+	})
+}
+
+func Test_EqualizePasswordTiming(t *testing.T) {
+	// It exists only for its (constant) side-effect: it must run safely for any
+	// input and never panic.
+	assert.NotPanics(t, func() {
+		EqualizePasswordTiming("some-password")
+		EqualizePasswordTiming("")
+	})
+}

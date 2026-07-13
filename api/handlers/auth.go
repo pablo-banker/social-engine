@@ -21,7 +21,7 @@ type registerRequest struct {
 	FirstName string `json:"firstName" validate:"required,max=50"`
 	LastName  string `json:"lastName" validate:"required,max=50"`
 	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required,min=6,max=72"`
+	Password  string `json:"password" validate:"required,min=8,max=72"`
 }
 
 type loginRequest struct {
@@ -69,6 +69,13 @@ func Register(c *fiber.Ctx) error {
 
 	if err := validation.Struct(&req); err != nil {
 		return utils.BuildErrorResponse(c, apiErrors.ErrValidation.WithDetails(err.Error()))
+	}
+
+	// bcrypt hashes at most 72 bytes; the validator's max=72 counts runes, so a
+	// multibyte password can pass validation yet overflow bcrypt. Reject it as a
+	// clean validation error instead of a 500 from HashPassword.
+	if len(req.Password) > 72 {
+		return utils.BuildErrorResponse(c, apiErrors.ErrValidation.WithDetails("password must be at most 72 bytes"))
 	}
 
 	taken, err := repo.Verify(ctx, &entities.User{}, &entities.QueryParams{
@@ -156,6 +163,9 @@ func Login(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Spend the same bcrypt time as a wrong password so an unknown email
+			// can't be told apart from a known one by response latency.
+			models.EqualizePasswordTiming(req.Password)
 			return utils.BuildErrorResponse(c, apiErrors.ErrInvalidCredentials)
 		}
 		return utils.BuildErrorResponse(c, apiErrors.ErrInternal.WithInternal(err.Error()))

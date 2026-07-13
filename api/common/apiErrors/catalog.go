@@ -6,10 +6,11 @@ import (
 
 var (
 	// 1. Database & Infra
-	ErrDatabaseURL = New(ErrDatabaseURLCode, "DATABASE_URL environment variable is not set", http.StatusInternalServerError)
-	ErrConnectDB   = New(ErrConnectDBCode, "Error connecting to the database", http.StatusInternalServerError)
-	ErrPingDB      = New(ErrPingDBCode, "Error pinging the database", http.StatusInternalServerError)
-	ErrInternal    = New(ErrInternalCode, "An unexpected error occurred", http.StatusInternalServerError)
+	ErrDatabaseURL     = New(ErrDatabaseURLCode, "DATABASE_URL environment variable is not set", http.StatusInternalServerError)
+	ErrConnectDB       = New(ErrConnectDBCode, "Error connecting to the database", http.StatusInternalServerError)
+	ErrPingDB          = New(ErrPingDBCode, "Error pinging the database", http.StatusInternalServerError)
+	ErrInternal        = New(ErrInternalCode, "An unexpected error occurred", http.StatusInternalServerError)
+	ErrTooManyRequests = New(ErrTooManyRequestsCode, "Too many requests, please try again later", http.StatusTooManyRequests)
 
 	// 2. Auth & Validação
 	ErrInvalidPayload     = New(ErrInvalidPayloadCode, "The request payload is invalid", http.StatusBadRequest)
@@ -36,7 +37,7 @@ var (
 // must be appended here in addition to being declared above.
 var All = []*APIError{
 	// 1. Database & Infra
-	ErrDatabaseURL, ErrConnectDB, ErrPingDB, ErrInternal,
+	ErrDatabaseURL, ErrConnectDB, ErrPingDB, ErrInternal, ErrTooManyRequests,
 
 	// 2. Auth & Validação
 	ErrInvalidPayload, ErrValidation, ErrInvalidCredentials,

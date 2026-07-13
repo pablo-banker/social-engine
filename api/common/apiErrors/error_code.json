@@ -3,6 +3,7 @@
   "SE-000102": "Error connecting to the database",
   "SE-000103": "Error pinging the database",
   "SE-000104": "An unexpected error occurred",
+  "SE-000105": "Too many requests, please try again later",
 
   "SE-000201": "The request payload is invalid",
   "SE-000202": "One or more fields are invalid",

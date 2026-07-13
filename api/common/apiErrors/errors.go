@@ -8,6 +8,7 @@ const (
 	ErrConnectDBCode
 	ErrPingDBCode
 	ErrInternalCode
+	ErrTooManyRequestsCode
 )
 
 const (

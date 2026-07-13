@@ -3,15 +3,20 @@ package main
 import (
 	"context"
 	"os"
+	"social-engine/common/apiErrors"
 	"social-engine/common/logger"
+	"social-engine/common/models"
 	"social-engine/common/repositories"
+	"social-engine/common/utils"
 	"social-engine/common/validation"
 	"social-engine/handlers"
 	"social-engine/handlers/middleware"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/swagger"
 	"go.uber.org/zap"
 
@@ -26,6 +31,11 @@ func main() {
 	err := repositories.Connect(ctx)
 	if err != nil {
 		logger.L(ctx).Fatal("Failed to connect to repositories", zap.Error(err))
+	}
+
+	// Fail fast if the JWT signing secret is missing or too weak.
+	if err := models.ValidateSecret(); err != nil {
+		logger.L(ctx).Fatal("Invalid JWT configuration", zap.Error(err))
 	}
 
 	// Initialize the validator
@@ -62,9 +72,19 @@ func main() {
 
 	app.Get("/health", handlers.Health)
 
+	// Throttle the auth endpoints per client IP to blunt brute-force and
+	// credential-stuffing attempts.
+	authLimiter := limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: time.Minute,
+		LimitReached: func(c *fiber.Ctx) error {
+			return utils.BuildErrorResponse(c, apiErrors.ErrTooManyRequests)
+		},
+	})
+
 	// Auth
-	app.Post("/auth/register", handlers.Register)
-	app.Post("/auth/login", handlers.Login)
+	app.Post("/auth/register", authLimiter, handlers.Register)
+	app.Post("/auth/login", authLimiter, handlers.Login)
 
 	// Posts
 	app.Get("/posts", middleware.OptionalAuth, handlers.List)

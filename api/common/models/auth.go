@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -12,6 +13,11 @@ import (
 
 // TokenTTL is how long an issued access token stays valid.
 const TokenTTL = 7 * 24 * time.Hour
+
+// MinSecretBytes is the minimum accepted length of JWT_SECRET. HS256 accepts
+// short keys, so a weak/guessable secret would let an attacker forge tokens;
+// this floor keeps the signing key infeasible to brute-force.
+const MinSecretBytes = 32
 
 // ErrMissingSecret is returned when the JWT signing secret is not configured.
 var ErrMissingSecret = errors.New("JWT_SECRET environment variable is not set")
@@ -25,6 +31,16 @@ func secret() ([]byte, error) {
 		return nil, ErrMissingSecret
 	}
 	return []byte(s), nil
+}
+
+// ValidateSecret checks that JWT_SECRET is present and long enough. Call it once
+// at startup so a missing or weak secret fails fast instead of at the first
+// token operation (and never reaches production silently).
+func ValidateSecret() error {
+	if len(os.Getenv("JWT_SECRET")) < MinSecretBytes {
+		return fmt.Errorf("JWT_SECRET must be set and at least %d bytes long", MinSecretBytes)
+	}
+	return nil
 }
 
 // GenerateToken issues a signed HS256 token whose subject is the user ID.
@@ -82,4 +98,24 @@ func HashPassword(password string) (string, error) {
 // CheckPassword reports whether the plaintext password matches the bcrypt hash.
 func CheckPassword(hash, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+}
+
+// dummyPasswordHash is a valid bcrypt hash used only to burn the same CPU as a
+// real password check when the account does not exist.
+var dummyPasswordHash = mustBcrypt("social-engine-timing-equalizer")
+
+func mustBcrypt(password string) []byte {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+	return hash
+}
+
+// EqualizePasswordTiming runs a throwaway bcrypt comparison. Call it on the
+// "user not found" login path so an unknown email costs the same time as a
+// wrong password, closing the timing side-channel that reveals which emails
+// have accounts.
+func EqualizePasswordTiming(password string) {
+	_ = bcrypt.CompareHashAndPassword(dummyPasswordHash, []byte(password))
 }
