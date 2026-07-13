@@ -13,7 +13,7 @@
   <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-green">
 </p>
 
-Social Engine lets people register, publish short posts with hashtags, like and comment, follow feeds, explore trending topics, and personalize their profile. It exists to showcase a **production-minded full-stack setup**: a typed, animated SvelteKit UI backed by a layered, tested Go API — with a single command to run everything.
+Social Engine lets people register, publish short posts with hashtags, like and comment, follow feeds, explore trending topics, and personalize their profile. It exists to showcase a **production-minded full-stack setup**: a typed, animated SvelteKit UI backed by a layered, tested Go API.
 
 A distinctive feature is that the frontend runs in two modes: **offline** (rich mocked data, no backend needed) and **online** (talking to the real Go API + PostgreSQL), toggled by a single environment flag.
 
@@ -84,8 +84,9 @@ The **Go API** is layered: `handlers` (HTTP + auth middleware) → `models` (dom
 git clone <repo-url> social-engine
 cd social-engine
 
-# 2. Configure environment (single global .env for API + Web)
-cp .env.example .env
+# 2. Configure environment (each app has its own .env)
+cp api/.env.example api/.env
+cp web/.env.example web/.env
 
 # 3. Install web dependencies
 cd web && npm install && cd ..
@@ -93,29 +94,45 @@ cd web && npm install && cd ..
 
 ### Environment Variables
 
-A single `.env` at the repository root configures both the API and the web app.
+The API and the web app each read their own `.env` file.
+
+**`api/.env`**
 
 | Variable               | Description                                          | Example                                                                 |
 | ---------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
 | `PORT`                 | Port the Go API listens on                           | `8080`                                                                   |
 | `DATABASE_URL`         | PostgreSQL connection string                         | `postgres://social:social@localhost:5432/social_engine?sslmode=disable` |
-| `JWT_SECRET`           | Secret used to sign JWT access tokens                | *(long, random value)*                                                   |
+| `JWT_SECRET`           | Secret used to sign JWT tokens — **min. 32 bytes** (the API refuses to start otherwise); generate with `openssl rand -base64 32` | *(long, random value)* |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins                      | `http://localhost:5173`                                                  |
-| `USE_API`              | `false` = mocked data · `true` = call the real API   | `false`                                                                  |
-| `API_BASE_URL`         | Base URL the web uses to reach the API               | `http://localhost:8080`                                                  |
+
+**`web/.env`**
+
+| Variable       | Description                                          | Example                 |
+| -------------- | --------------------------------------------------- | ----------------------- |
+| `USE_API`      | `false` = mocked data · `true` = call the real API  | `false`                 |
+| `API_BASE_URL` | Base URL the web uses to reach the API              | `http://localhost:8080` |
 
 ### Running the Project
 
-**Offline** — only the web app, with mocked data. No database or API required. Great for exploring the UI.
+**Offline** — only the web app, with mocked data. No database or API required. Great for exploring the UI. Keep `USE_API=false` in `web/.env`, then:
 
 ```bash
-make offline
+cd web && npm run dev
 ```
 
-**Online** — starts PostgreSQL, applies migrations, runs the Go API, and serves the web app against it.
+**Online** — run the database, API, and web app together (set `USE_API=true` in `web/.env` first):
 
 ```bash
-make online
+# 1. Start PostgreSQL and apply migrations
+cd api
+docker compose up -d db
+make migrate_up
+
+# 2. Run the API (loads api/.env automatically)
+go run .
+
+# 3. In another terminal, run the web app
+cd web && npm run dev
 ```
 
 The web app runs at **http://localhost:5173** and the API at **http://localhost:8080** (Swagger docs at `/docs`).
@@ -124,23 +141,16 @@ The web app runs at **http://localhost:5173** and the API at **http://localhost:
 
 ## 🛠️ Available Commands
 
-**Root** (orchestration)
-
-| Command        | Description                                             |
-| -------------- | ------------------------------------------------------ |
-| `make offline` | Run only the web with mocked data (no DB, no API)      |
-| `make online`  | Start the DB, run the API, and serve the web against it |
-| `make stop`    | Stop the database container                            |
-| `make logs`    | Follow the database logs                               |
-
 **API** (from `api/`)
 
-| Command              | Description                                  |
-| -------------------- | -------------------------------------------- |
-| `make tests`         | Run all Go tests with coverage               |
-| `make test_ci`       | Run unit tests with the 80% coverage gate    |
-| `make migrate_up`    | Apply database migrations                    |
-| `make generate_docs` | Regenerate the Swagger documentation         |
+| Command                   | Description                              |
+| ------------------------- | ---------------------------------------- |
+| `docker compose up -d db` | Start the PostgreSQL container           |
+| `go run .`                | Run the API server                       |
+| `make migrate_up`         | Apply database migrations                |
+| `make tests`              | Run all Go tests with coverage           |
+| `bash scripts/coverage.sh`| Run tests with the 80% coverage gate     |
+| `make generate_docs`      | Regenerate the Swagger documentation     |
 
 **Web** (from `web/`)
 
@@ -161,18 +171,18 @@ social-engine/
 │   ├── handlers/           # HTTP handlers + JWT auth middleware
 │   ├── docs/               # generated Swagger docs
 │   ├── scripts/            # coverage gate script
-│   └── Makefile
+│   ├── docker-compose.yml  # PostgreSQL
+│   ├── .env.example        # API configuration
+│   └── Makefile            # migrations, tests, docs
 ├── web/                    # SvelteKit app (Svelte 5 + TypeScript + Tailwind v4)
-│   └── src/
-│       ├── lib/
-│       │   ├── components/ # UI components (feed, nav, auth, background)
-│       │   ├── server/     # typed API client, auth/session, mock data
-│       │   └── ...         # appearance, formatting, shared types
-│       └── routes/         # (auth) and (main) route groups
-├── docker-compose.yml      # PostgreSQL
-├── .env.example            # single global config (API + Web)
-├── .github/workflows/      # CI: tests + coverage gate
-└── Makefile                # offline / online orchestration
+│   ├── src/
+│   │   ├── lib/
+│   │   │   ├── components/ # UI components (feed, nav, auth, background)
+│   │   │   ├── server/     # typed API client, auth/session, mock data
+│   │   │   └── ...         # appearance, formatting, shared types
+│   │   └── routes/         # (auth) and (main) route groups
+│   └── .env.example        # web configuration
+└── .github/workflows/      # CI: tests + coverage gate
 ```
 
 ---
@@ -181,7 +191,7 @@ social-engine/
 
 - Persist follow/unfollow actions and social graph queries
 - Cursor-based pagination and infinite scroll
-- Rate limiting and refresh-token rotation on the API
+- Refresh-token rotation and token revocation
 - Real-time updates (WebSocket / SSE) for likes and comments
 - Image uploads for avatars and posts
 - Containerized deployment with a managed PostgreSQL instance
