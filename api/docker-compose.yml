@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: social
       POSTGRES_DB: social_engine
     ports:
-      - "5432:5432"
+      - "15432:5432"
     volumes:
       - social_engine_pgdata:/var/lib/postgresql/data
     healthcheck:

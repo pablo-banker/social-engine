@@ -10,9 +10,12 @@ export const load: PageServerLoad = async ({ params, fetch, cookies }) => {
   const id = params.id
 
   if (USE_API) {
+    // Token opcional: faz a API marcar `likedByMe` para o usuário logado.
+    const token = getOptionalSession(cookies)?.accessToken
+
     try {
       const [post, comments] = await Promise.all([
-        api.posts.get(id, fetch),
+        api.posts.get(id, token, fetch),
         api.posts.listComments(id, fetch)
       ])
 

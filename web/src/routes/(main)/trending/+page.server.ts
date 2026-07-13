@@ -6,8 +6,11 @@ import { getTrendingTopics, listPopularPosts } from '$lib/server/mock-data'
 
 export const load: PageServerLoad = async ({ fetch, cookies }) => {
   if (USE_API) {
+    // Token opcional: faz a API marcar `likedByMe` nos posts em alta.
+    const token = getOptionalSession(cookies)?.accessToken
+
     try {
-      const { topics, posts } = await api.trending.get(fetch)
+      const { topics, posts } = await api.trending.get(token, fetch)
 
       return { topics, posts }
     } catch (error) {

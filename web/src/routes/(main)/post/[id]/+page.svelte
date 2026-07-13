@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms'
   import PostCard from '$lib/components/feed/PostCard.svelte'
   import { avatarBackground } from '$lib/appearance'
+  import { relativeTime } from '$lib/format'
   import type { PageProps } from './$types'
 
   let { data, form }: PageProps = $props()
@@ -119,7 +120,7 @@
             </a>
 
             <p class="text-xs text-zinc-500">
-              @{comment.author.username} · {comment.createdAt}
+              @{comment.author.username} · {relativeTime(comment.createdAt)}
             </p>
           </div>
         </div>

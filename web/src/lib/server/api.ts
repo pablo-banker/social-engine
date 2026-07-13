@@ -93,12 +93,20 @@ async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<
   const payload = raw ? safeJsonParse(raw) : null
 
   if (!response.ok) {
+    // A Go API responde erros como { status, code, error, details }.
     const message =
-      (isRecord(payload) && typeof payload.message === 'string' && payload.message) ||
+      (isRecord(payload) &&
+        ((typeof payload.error === 'string' && payload.error) ||
+          (typeof payload.message === 'string' && payload.message))) ||
       'A API retornou um erro inesperado.'
     const code = isRecord(payload) && typeof payload.code === 'string' ? payload.code : undefined
 
     throw new ApiError(message, response.status, code)
+  }
+
+  // A Go API embrulha toda resposta de sucesso em { data: ... }.
+  if (isRecord(payload) && 'data' in payload) {
+    return payload.data as T
   }
 
   return payload as T
@@ -168,14 +176,17 @@ export const api = {
   },
 
   posts: {
-    list(fetchImpl?: FetchLike) {
+    // token é opcional: quando presente, a API marca `likedByMe` para o usuário.
+    list(token?: string, fetchImpl?: FetchLike) {
       return apiFetch<Post[]>('/posts', {
+        token,
         fetch: fetchImpl
       })
     },
 
-    get(id: string, fetchImpl?: FetchLike) {
+    get(id: string, token?: string, fetchImpl?: FetchLike) {
       return apiFetch<Post>(`/posts/${encodeURIComponent(id)}`, {
+        token,
         fetch: fetchImpl
       })
     },
@@ -214,36 +225,44 @@ export const api = {
   },
 
   users: {
-    getByUsername(username: string, fetchImpl?: FetchLike) {
-      return apiFetch<Profile>(`/users/${encodeURIComponent(username)}`, {
-        fetch: fetchImpl
-      })
+    async getByUsername(username: string, fetchImpl?: FetchLike): Promise<Profile> {
+      // A entity User da API expõe `createdAt`; o contrato do web usa `joinedAt`.
+      const profile = await apiFetch<Profile & { createdAt?: string }>(
+        `/users/${encodeURIComponent(username)}`,
+        { fetch: fetchImpl }
+      )
+
+      return { ...profile, joinedAt: profile.joinedAt ?? profile.createdAt ?? '' }
     },
 
-    listPosts(username: string, fetchImpl?: FetchLike) {
+    listPosts(username: string, token?: string, fetchImpl?: FetchLike) {
       return apiFetch<Post[]>(`/users/${encodeURIComponent(username)}/posts`, {
+        token,
         fetch: fetchImpl
       })
     }
   },
 
   explore: {
-    get(fetchImpl?: FetchLike) {
+    get(token?: string, fetchImpl?: FetchLike) {
       return apiFetch<{ users: SuggestedUser[]; posts: Post[] }>('/explore', {
+        token,
         fetch: fetchImpl
       })
     },
 
-    byTag(tag: string, fetchImpl?: FetchLike) {
+    byTag(tag: string, token?: string, fetchImpl?: FetchLike) {
       return apiFetch<Post[]>(`/explore?tag=${encodeURIComponent(tag)}`, {
+        token,
         fetch: fetchImpl
       })
     }
   },
 
   trending: {
-    get(fetchImpl?: FetchLike) {
+    get(token?: string, fetchImpl?: FetchLike) {
       return apiFetch<{ topics: TrendingTopic[]; posts: Post[] }>('/trending', {
+        token,
         fetch: fetchImpl
       })
     }

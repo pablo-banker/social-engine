@@ -14,6 +14,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
 	"go.uber.org/zap"
+
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {

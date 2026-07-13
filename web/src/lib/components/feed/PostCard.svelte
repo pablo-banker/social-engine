@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { avatarBackground } from '$lib/appearance'
+  import { relativeTime } from '$lib/format'
   import type { Post } from '$lib/types'
 
   type Props = {
@@ -123,7 +124,7 @@
         <a href="/{post.author.username}" class="relative z-10 transition hover:text-zinc-300">
           @{post.author.username}
         </a>
-        · {post.createdAt}
+        · {relativeTime(post.createdAt)}
       </p>
     </div>
   </div>

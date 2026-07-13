@@ -1,6 +1,7 @@
 <script lang="ts">
   import PostCard from '$lib/components/feed/PostCard.svelte'
   import { avatarBackground, bannerGradient } from '$lib/appearance'
+  import { joinedLabel } from '$lib/format'
   import type { PageProps } from './$types'
 
   let { data }: PageProps = $props()
@@ -71,7 +72,7 @@
       {/if}
 
       <p class="mt-3 text-sm text-zinc-500">
-        Entrou em {profile.joinedAt}
+        Entrou em {joinedLabel(profile.joinedAt)}
       </p>
 
       <div class="mt-5 flex flex-wrap gap-6 text-sm text-zinc-400">

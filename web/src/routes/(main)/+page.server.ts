@@ -9,10 +9,13 @@ const MAX_POST_LENGTH = 500
 
 export const load: PageServerLoad = async ({ fetch, cookies }) => {
   if (USE_API) {
+    // Token opcional: faz a API marcar `likedByMe` para o usuário logado.
+    const token = getOptionalSession(cookies)?.accessToken
+
     // Independentes: uma falha no trending (sidebar) não pode esvaziar o feed.
     const [postsResult, trendingResult] = await Promise.allSettled([
-      api.posts.list(fetch),
-      api.trending.get(fetch)
+      api.posts.list(token, fetch),
+      api.trending.get(token, fetch)
     ])
 
     if (postsResult.status === 'rejected') {

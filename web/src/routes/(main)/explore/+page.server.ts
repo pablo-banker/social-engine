@@ -11,18 +11,20 @@ import {
 
 export const load: PageServerLoad = async ({ url, fetch, cookies }) => {
   const tag = url.searchParams.get('tag')?.toLowerCase().replace(/^#/, '') || null
-  const viewer = getOptionalSession(cookies)?.user.username
+  const session = getOptionalSession(cookies)
+  const viewer = session?.user.username
+  const token = session?.accessToken
 
   if (USE_API) {
     // Best-effort e independente do conteúdo principal (só alimenta a sidebar).
     const topicsPromise = api.trending
-      .get(fetch)
+      .get(token, fetch)
       .then((trending) => trending.topics)
       .catch(() => [] as TrendingTopic[])
 
     try {
-      const posts = tag ? await api.explore.byTag(tag, fetch) : null
-      const explore = tag ? null : await api.explore.get(fetch)
+      const posts = tag ? await api.explore.byTag(tag, token, fetch) : null
+      const explore = tag ? null : await api.explore.get(token, fetch)
 
       return {
         tag,
