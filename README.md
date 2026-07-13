@@ -187,17 +187,6 @@ social-engine/
 
 ---
 
-## 🔭 Future Improvements
-
-- Persist follow/unfollow actions and social graph queries
-- Cursor-based pagination and infinite scroll
-- Refresh-token rotation and token revocation
-- Real-time updates (WebSocket / SSE) for likes and comments
-- Image uploads for avatars and posts
-- Containerized deployment with a managed PostgreSQL instance
-
----
-
 ## 📄 License
 
 Released under the [MIT License](./LICENSE).
